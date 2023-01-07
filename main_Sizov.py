@@ -1,1 +1,1 @@
-print("Hello, group!")
+print("Hello, men!")

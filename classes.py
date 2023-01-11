@@ -23,7 +23,7 @@ class ButtonBackLvlChoise(pygame.sprite.Sprite):  # Класс спрайта к
         self.image = ButtonBackLvlChoise.image
         self.rect = self.image.get_rect()
         self.rect.x = 1126
-        self.rect.y = 40
+        self.rect.y = 50
 
     def change_rect(self, x, y):
         self.rect.x = x
@@ -38,7 +38,7 @@ class ButtonFirstLvl(pygame.sprite.Sprite):  # Класс спрайта кно�
         self.image = ButtonFirstLvl.image
         self.rect = self.image.get_rect()
         self.rect.x = 95
-        self.rect.y = 350
+        self.rect.y = 380
 
     def change_rect(self, x, y):
         self.rect.x = x
@@ -51,9 +51,48 @@ class ButtonMainMenu(pygame.sprite.Sprite):
     def __init__(self, *group):
         super().__init__(*group)
         self.image = ButtonMainMenu.image
+
+
+class LevelChoiseMenuButton(pygame.sprite.Sprite):
+    image = load_image("level_choise_button.png")
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = LevelChoiseMenuButton.image
         self.rect = self.image.get_rect()
         self.rect.x = 10
         self.rect.y = 10
+
+    def change_rect(self, x, y):  # Смена положения спрайта
+        self.rect.x = x
+        self.rect.y = y
+
+
+class ShopButton(pygame.sprite.Sprite):
+    image = load_image("shop_button.png")
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = ShopButton.image
+        self.rect = self.image.get_rect()
+        self.rect.x = 10
+        self.rect.y = 10
+
+    def change_rect(self, x, y):  # Смена положения спрайта
+        self.rect.x = x
+        self.rect.y = y
+
+
+class ExitButton(pygame.sprite.Sprite):
+    image = load_image("quit_button.png")
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = ExitButton.image
+        self.rect = self.image.get_rect()
+        self.rect.x = 10
+        self.rect.y = 10
+
 
     def change_rect(self, x, y):  # Смена положения спрайта
         self.rect.x = x

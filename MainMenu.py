@@ -1,65 +1,52 @@
 import sys
 import os
 import pygame
-from classes import ButtonMainMenu, ButtonBackLvlChoise, ButtonFirstLvl, load_image
+from classes import LevelChoiseMenuButton, ShopButton, ExitButton, ButtonBackLvlChoise, ButtonFirstLvl, load_image
 
 
-def load_main_menu(fonts):
+def load_main_menu():
     background = load_image("background.png")
-    background_show = pygame.transform.scale(background, (1920, 1025))
+    background_show = pygame.transform.scale(background, (1920, 1080))
     screen_main_menu.blit(background_show, (0, 0))
     # Создание заднего фона главного меню
-
-    font = pygame.font.SysFont('serif', 100)
-    title = font.render("TowerDefence", True, (10, 10, 10))
-    screen_main_menu.blit(title, (680, 50))
-    # Создание титульного текста в главном меню
-
-    start_game_text = fonts.render("Начать игру", True, (10, 10, 10))
-    store_text = fonts.render("Магазин", True, (10, 10, 10))
-    exit_text = fonts.render("Выход на рабочий стол", True, (10, 10, 10))
-    # Создание текста на кнопках в главном меню
-
-    buttons_main_menu.draw(buttons_screen_main_menu)  # Сначала рисуются кнопки
-    buttons_screen_main_menu.blit(start_game_text, (830, 400))
-    buttons_screen_main_menu.blit(store_text, (870, 600))
-    buttons_screen_main_menu.blit(exit_text, (687, 800))  # Затем текст на них
+    buttons_main_menu.draw(buttons_screen_main_menu)  # Отрисовка кнопок
 
 
 def load_level_choise():
     background = load_image("level_choise.png")
-    background_show = pygame.transform.scale(background, (1920, 1025))
+    background_show = pygame.transform.scale(background, (1920, 1080))
     screen_level_choise.blit(background_show, (0, 0))
     # Создание заднего фона меню выбора уровня
+    buttons_level_choise.draw(buttons_screen_level_choise)  # Отрисовка кнопок меню выбора уровня
 
-    buttons_level_choise.draw(buttons_screen_level_choise) # Отрисовка кнопок меню выбора уровня
 
 if __name__ == '__main__':
     pygame.init()
-    width, height = 1920, 1025
+    width, height = 1920, 1080
     size = width, height
 
     screen_main_menu = pygame.display.set_mode(size)  # Экран на который накладывается фон главного меню
     screen_level_choise = pygame.display.set_mode(size)  # Экран на который накладывается фон меню выбора уровня
 
     buttons_screen_main_menu = pygame.display.set_mode(size)  # Экран на который накладываются кнопки главного меню
-    buttons_screen_level_choise = pygame.display.set_mode(size)  # Экран на который накладываются кнопки меню выбора уровня
+    buttons_screen_level_choise = pygame.display.set_mode(
+        size)  # Экран на который накладываются кнопки меню выбора уровня
 
     buttons_main_menu = pygame.sprite.Group()  # Создание группы со спрайтами кнопок в главном меню
-    buttons_font = pygame.font.SysFont('serif_bold', 70)  # Создание переменной со шрифтом на кнопках в главном меню
+    buttons_font = pygame.font.SysFont('serif_bold', 150)  # Создание переменной со шрифтом на кнопках в главном меню
 
     buttons_level_choise = pygame.sprite.Group()  # Создание группы со спрайтами кнопок меню выбора уровня
 
-    start_game_button = ButtonMainMenu(buttons_main_menu)
-    start_game_button.change_rect(670, 350)
+    start_game_button = LevelChoiseMenuButton(buttons_main_menu)
+    start_game_button.change_rect(1170, 670)
     # Создание кнопки начала игры (выбора уровня) в главном меню
 
-    store_button = ButtonMainMenu(buttons_main_menu)
-    store_button.change_rect(670, 550)
+    store_button = ShopButton(buttons_main_menu)
+    store_button.change_rect(100, 670)
     # Создание кнопки магазина в главном меню
 
-    exit_button_main_menu = ButtonMainMenu(buttons_main_menu)
-    exit_button_main_menu.change_rect(670, 750)
+    exit_button_main_menu = ExitButton(buttons_main_menu)
+    exit_button_main_menu.change_rect(1600, 150)
     # Создание кнопки выхода из игры в главном меню
 
     back_button_level_choise = ButtonBackLvlChoise(buttons_level_choise)  # Кнопка "назад"
@@ -71,7 +58,7 @@ if __name__ == '__main__':
 
     while True:
         if main_menu_flag:
-            load_main_menu(buttons_font)  # Функция загрузки главного меню
+            load_main_menu()  # Функция загрузки главного меню
         if level_choise_flag:
             load_level_choise()  # Функция загрузки меню выбора уровней
         for event in pygame.event.get():

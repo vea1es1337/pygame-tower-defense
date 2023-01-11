@@ -97,3 +97,14 @@ class ExitButton(pygame.sprite.Sprite):
     def change_rect(self, x, y):  # Смена положения спрайта
         self.rect.x = x
         self.rect.y = y
+
+
+class TowerCell(pygame.sprite.Sprite):
+    image = load_image("cell1.png")
+    tile_width = tile_height = 128
+    def __init__(self, pos_x, pos_y, *group):
+        super().__init__(*group)
+        self.image = TowerCell.image
+        self.rect = self.image.get_rect().move(
+            TowerCell.tile_width * pos_x, TowerCell.tile_height * pos_y)
+

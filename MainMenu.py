@@ -1,7 +1,8 @@
 import sys
 import os
 import pygame
-from classes import LevelChoiseMenuButton, ShopButton, ExitButton, ButtonBackLvlChoise, ButtonFirstLvl, load_image
+from classes import LevelChoiseMenuButton, ShopButton, ExitButton, ButtonBackLvlChoise, ButtonFirstLvl, load_image, \
+    TowerCell
 
 
 def load_main_menu():
@@ -12,12 +13,28 @@ def load_main_menu():
     buttons_main_menu.draw(buttons_screen_main_menu)  # Отрисовка кнопок
 
 
-def load_level_choise():
+def load_level_choise_menu():
     background = load_image("level_choise.png")
     background_show = pygame.transform.scale(background, (1920, 1080))
     screen_level_choise.blit(background_show, (0, 0))
     # Создание заднего фона меню выбора уровня
     buttons_level_choise.draw(buttons_screen_level_choise)  # Отрисовка кнопок меню выбора уровня
+
+
+def load_level(filename):  # Функция возвращает текстовый файл башен уровня 1
+    filename = "data/" + filename
+    with open(filename, 'r') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+        for x in range(len(level_map)):
+            level_map[x] = list(level_map[x])
+    return level_map
+
+
+def generate_level(level):  # Генерация уровня 1
+    for y in range(len(level)):
+        for x in range(len(level[y])):
+            if level[y][x] == '@':
+                TowerCell(x, y, towers_group)
 
 
 if __name__ == '__main__':
@@ -37,6 +54,9 @@ if __name__ == '__main__':
 
     buttons_level_choise = pygame.sprite.Group()  # Создание группы со спрайтами кнопок меню выбора уровня
 
+    towers_group = pygame.sprite.Group() # Группа со спрайтами башен
+    first_level_screen = pygame.display.set_mode(size) # Экран, на котором рисуется первый уровень
+
     start_game_button = LevelChoiseMenuButton(buttons_main_menu)
     start_game_button.change_rect(1170, 670)
     # Создание кнопки начала игры (выбора уровня) в главном меню
@@ -55,12 +75,24 @@ if __name__ == '__main__':
 
     level_choise_flag = False  # Если этот флаг активен, будет загружаться меню выбора уровня
     main_menu_flag = True  # Если этот флаг активен, будет загружаться главное меню
+    first_lvl_start = False
+
+    for x in load_level("1map.txt"):
+        print(x)
+
+    generate_level(load_level("1map.txt"))
 
     while True:
         if main_menu_flag:
             load_main_menu()  # Функция загрузки главного меню
         if level_choise_flag:
-            load_level_choise()  # Функция загрузки меню выбора уровней
+            load_level_choise_menu()  # Функция загрузки меню выбора уровней
+        if first_lvl_start:
+            background = load_image("first_map.png")
+            background_show = pygame.transform.scale(background, (1920, 1080))
+            first_level_screen.blit(background_show, (0, 0))
+            towers_group.draw(first_level_screen)  # Отрисовка карты первого уровня
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
@@ -81,6 +113,11 @@ if __name__ == '__main__':
                     main_menu_flag = True
                 # Кнопка "Назад" в меню выбора уровня
                 if buttons_level_choise.sprites()[1].rect.collidepoint(x, y) and level_choise_flag:
-                    print("Уровень первый")
+                    first_lvl_start = True
+                    level_choise_flag = False
                 # Кнопка первого уровня в меню выбора уровней
+                if towers_group.sprites()[-1].rect.collidepoint(x, y) and first_level_screen:
+                    first_lvl_start = False
+                    level_choise_flag = True
+                # Нажатие на последнюю башню (Дима исправь)
         pygame.display.flip()

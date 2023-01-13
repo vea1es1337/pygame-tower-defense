@@ -83,21 +83,6 @@ class ShopButton(pygame.sprite.Sprite):
         self.rect.y = y
 
 
-class FirstTower(pygame.sprite.Sprite):
-    image = load_image("common_lvl1.png")
-
-    def __init__(self, *group):
-        super().__init__(*group)
-        self.image = FirstTower.image
-        self.rect = self.image.get_rect()
-        self.rect.x = 100
-        self.rect.y = 100
-
-    def change_rect(self, x, y):
-        self.rect.x = x
-        self.rect.y = y
-
-
 class ExitButton(pygame.sprite.Sprite):
     image = load_image("quit_button.png")
 

@@ -333,6 +333,7 @@ size)  # Экран на который накладываются кнопки 
 
 
 
+
     def gameplay():
         print(towers)
         if first_level_screen:

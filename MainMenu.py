@@ -62,11 +62,17 @@ size)  # Экран на который накладываются кнопки 
     towers_group = pygame.sprite.Group() # Группа со спрайтами клеток
 
     really_tower_group = pygame.sprite.Group() # группа спрайтика первой башни
+    first_enemy_group = pygame.sprite.Group() # группа спрата первого врага
 
     tower1 = pygame.sprite.Sprite()
     tower1.image = load_image("common_lvl1.png")
     tower1.rect = tower1.image.get_rect()
     really_tower_group.add(tower1)
+
+    enemy1 = pygame.sprite.Sprite()
+    enemy1.image = load_image("enemy1.png")
+    enemy1.rect = tower1.image.get_rect()
+    first_enemy_group.add(enemy1)
 
     first_level_screen = pygame.display.set_mode(size) # Экран, на котором рисуется первый уровень
 
@@ -100,7 +106,7 @@ size)  # Экран на который накладываются кнопки 
                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                   ] # флаг активированных клеток
     towers = [] # список поставленных башен
-
+    shapes = []
     player = Player(9000, 10) # у игрока 350 монет и 10 жизней
 
     class Tower1:
@@ -118,6 +124,20 @@ size)  # Экран на который накладываются кнопки 
             tower1.rect.y = self.y
             really_tower_group.draw(first_level_screen)
 
+
+    class Shape1:               # класс врага первого
+        def __init__(self, x, y, hp, speed, reward):
+            self.x = x
+            self.y = y
+            self.speed = speed
+            self.point = 0
+            self.reward = reward
+            self.hp = hp
+
+        def Draw(self):
+            enemy1.rect.x = self.x
+            enemy1.rect.y = self.y
+            first_enemy_group.draw(first_level_screen)
 
 
 # --------------------------- Следующая функция ставит башни на клетки. Из за спрайтов и моего не полного
@@ -306,11 +326,10 @@ size)  # Экран на который накладываются кнопки 
 
 
 # ---------------------------------------------------------------------
-
-
-
-
-
+    # функция создания врагов
+    def Creating_Enemys():
+        for i in range(10):
+            shapes.append(Shape1(160, (2 * i) * 64, 5, 10, 40))
 
 
 
@@ -320,7 +339,8 @@ size)  # Экран на который накладываются кнопки 
             creating_tower()
             for tower in towers:
                 tower.Draw()
-
+            for shape in shapes:
+                shape.Draw()
     generate_level(load_level("1map.txt"))
     f2 = pygame.font.SysFont('comic sans', 66)
 
@@ -347,6 +367,7 @@ size)  # Экран на который накладываются кнопки 
             first_level_screen.blit(money_text, (1020, 20))
             first_level_screen.blit(health_text, (470, 20))
             gameplay()
+            Creating_Enemys()
 
 
         for event in pygame.event.get():

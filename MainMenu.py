@@ -5,8 +5,9 @@ import math
 from classes import LevelChoiseMenuButton, ShopButton, ExitButton, ButtonBackLvlChoise, ButtonFirstLvl, load_image, \
     TowerCell, Player, SelectUpgradeMenu
 
-FPS = 30
 clock = pygame.time.Clock()
+FPS = 30
+
 def load_main_menu():
     background = load_image("background.png")
     background_show = pygame.transform.scale(background, (1920, 1080))
@@ -102,20 +103,23 @@ size)  # Экран на который накладываются кнопки 
 
     red = (255, 0, 0)
     yellow = (255, 255, 0)
+    cyan = (20, 175, 255)
     cells_flag = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                   ] # флаг активированных клеток
     towers = [] # список поставленных башен
-    shapes = []
+    shapes = [] # список текущих на экране врагов
+    bullets = [] # список текущих на экране пуль
+
     player = Player(9000, 10) # у игрока 350 монет и 10 жизней
 
     class Tower1:
-        def __init__(self, x, y,  damage, cd, price, range):
+        def __init__(self, x, y,  damage, cd,  price, range):
             self.x = x
             self.y = y
             self.damage = damage
-            self.fire_rate = cd
-            self.fire_rate_tick = 0
+            self.firerate = cd # время перезарядки
+            self.firerate_tick = 0 # выступает в качестве таймера для firerate
             self.price = price
             self.range = range
 
@@ -123,6 +127,29 @@ size)  # Экран на который накладываются кнопки 
             tower1.rect.x = self.x
             tower1.rect.y = self.y
             really_tower_group.draw(first_level_screen)
+        def shooting(self):
+            if self.firerate_tick <= 0:
+                creating_bullets(self.x, self.y, cyan, 15, 5, 50)
+                self.firerate_tick = self.firerate
+            else:
+                self.firerate_tick -= 1 / FPS
+
+
+    class Bullet: #создание класса пули
+        def __init__(self, x, y, color, size, dmg, speed):
+            self.x = x
+            self.y = y
+            self.size = size
+            self.color = color
+            self.dmg = dmg
+            self.speed = speed
+
+        def move(self, vec_x, vec_y):  # функция движения пули, принимающая в аргументы векторные x и y
+            self.x += self.speed * vec_x
+            self.y += self.speed * vec_y
+
+        def Draw(self):
+            pygame.draw.circle(first_level_screen, self.color, [self.x, self.y], self.size)
 
 
     class Shape1:               # класс врага первого
@@ -327,9 +354,13 @@ size)  # Экран на который накладываются кнопки 
 
 # ---------------------------------------------------------------------
     # функция создания врагов
-    def Creating_Enemys():
+    def creating_enemys():
         for i in range(10):
             shapes.append(Shape1(160, (2 * i) * 64, 5, 10, 40))
+
+    def creating_bullets(x, y, color, size, dmg, speed):
+        bullets.append(Bullet(x, y, color, size, dmg, speed))
+
 
 
 
@@ -340,8 +371,12 @@ size)  # Экран на который накладываются кнопки 
             creating_tower()
             for tower in towers:
                 tower.Draw()
+                tower.shooting()
             for shape in shapes:
                 shape.Draw()
+            for bullet in bullets:
+                bullet.move(1, 0)
+                bullet.Draw()
     generate_level(load_level("1map.txt"))
     f2 = pygame.font.SysFont('comic sans', 66)
 
@@ -368,7 +403,7 @@ size)  # Экран на который накладываются кнопки 
             first_level_screen.blit(money_text, (1020, 20))
             first_level_screen.blit(health_text, (470, 20))
             gameplay()
-            Creating_Enemys()
+            creating_enemys()
 
 
         for event in pygame.event.get():
@@ -400,4 +435,5 @@ size)  # Экран на который накладываются кнопки 
                         if towers_group.sprites()[i].rect.collidepoint(x, y):
                             print(i)  # печатает номер выбранной клеточки
                             secret_important_number = i  # запоминает выбранную клеточку
+        clock.tick(FPS)
         pygame.display.flip()

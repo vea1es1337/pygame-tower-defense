@@ -1,4 +1,4 @@
-# В этом файле хранятся все классы, использующиеся в программе
+# В этом файле хранятся  почти все классы  спрайтов, использующиеся в программе
 
 
 import pygame
@@ -97,6 +97,7 @@ class ExitButton(pygame.sprite.Sprite):
     def change_rect(self, x, y):  # Смена положения спрайта
         self.rect.x = x
         self.rect.y = y
+
 
 class SelectUpgradeMenu(pygame.sprite.Sprite):  # класс спрайта менюшки выбора башни
     image = load_image("tower_select.png")

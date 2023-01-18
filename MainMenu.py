@@ -5,11 +5,14 @@ import math
 from classes import LevelChoiseMenuButton, ShopButton, ExitButton, ButtonBackLvlChoise, ButtonFirstLvl, load_image, \
     TowerCell, Player, SelectUpgradeMenu
 
+
+
+
 clock = pygame.time.Clock()
 FPS = 30
 
 def load_main_menu():
-    background = load_image("background.png")
+    background = load_image("background.png").convert_alpha()
     background_show = pygame.transform.scale(background, (1920, 1080))
     screen_main_menu.blit(background_show, (0, 0))
     # Создание заднего фона главного меню
@@ -17,11 +20,19 @@ def load_main_menu():
 
 
 def load_level_choise_menu():
-    background = load_image("level_choise.png")
+    background = load_image("level_choise.png").convert_alpha()
     background_show = pygame.transform.scale(background, (1920, 1080))
     screen_level_choise.blit(background_show, (0, 0))
     # Создание заднего фона меню выбора уровня
     buttons_level_choise.draw(buttons_screen_level_choise)  # Отрисовка кнопок меню выбора уровня
+
+def load_first_level():
+    background = load_image("first_map.png").convert_alpha()
+    background_show = pygame.transform.scale(background, (1920, 1080))
+    first_level_screen.blit(background_show, (0, 0))
+    towers_group.draw(first_level_screen)  # Отрисовка карты первого уровня
+
+    buttons_level1.draw(buttons_screen_level)
 
 
 def load_level(filename):  # Функция возвращает текстовый файл клеток уровня 1
@@ -53,6 +64,8 @@ if __name__ == '__main__':
     buttons_screen_main_menu = pygame.display.set_mode(size)  # Экран на который накладываются кнопки главного меню
     buttons_screen_level_choise = pygame.display.set_mode(
 size)  # Экран на который накладываются кнопки меню выбора уровня
+    buttons_screen_level = pygame.display.set_mode(  # Экран на который накладываются кнопки из уровня
+size)
 
     buttons_main_menu = pygame.sprite.Group()  # Создание группы со спрайтами кнопок в главном меню
 
@@ -66,12 +79,12 @@ size)  # Экран на который накладываются кнопки 
     first_enemy_group = pygame.sprite.Group() # группа спрата первого врага
 
     tower1 = pygame.sprite.Sprite()
-    tower1.image = load_image("common_lvl1.png")
+    tower1.image = load_image("common_lvl1.png").convert_alpha()
     tower1.rect = tower1.image.get_rect()
     really_tower_group.add(tower1)
 
     enemy1 = pygame.sprite.Sprite()
-    enemy1.image = load_image("enemy1.png")
+    enemy1.image = load_image("enemy1.png").convert_alpha()
     enemy1.rect = tower1.image.get_rect()
     first_enemy_group.add(enemy1)
 
@@ -94,6 +107,7 @@ size)  # Экран на который накладываются кнопки 
     back_button_level_choise = ButtonBackLvlChoise(buttons_level_choise)  # Кнопка "назад"
     first_lvl_button = ButtonFirstLvl(buttons_level_choise)  # Кнопка первого уровня
     # Создание кнопок в меню выбора уровня
+    tower_select_menu = SelectUpgradeMenu(buttons_level1)
 
     level_choise_flag = False  # Если этот флаг активен, будет загружаться меню выбора уровня
     main_menu_flag = True  # Если этот флаг активен, будет загружаться главное меню
@@ -127,15 +141,15 @@ size)  # Экран на который накладываются кнопки 
             tower1.rect.x = self.x
             tower1.rect.y = self.y
             really_tower_group.draw(first_level_screen)
+
         def shooting(self):
             if self.firerate_tick <= 0:
-                creating_bullets(self.x, self.y, cyan, 15, 5, 50)
+                creating_bullets(self.x, self.y, cyan, 15, 5, 25)
                 self.firerate_tick = self.firerate
             else:
                 self.firerate_tick -= 1 / FPS
 
-
-    class Bullet: #создание класса пули
+    class Bullet: # создание класса пули
         def __init__(self, x, y, color, size, dmg, speed):
             self.x = x
             self.y = y
@@ -173,7 +187,6 @@ size)  # Экран на который накладываются кнопки 
 
 
     def creating_tower():
-        print(cells_flag[25])
         keys = pygame.key.get_pressed()
         x, y = pygame.mouse.get_pos()
         if towers_group.sprites()[26].rect.collidepoint(x, y):
@@ -347,13 +360,14 @@ size)  # Экран на который накладываются кнопки 
         if towers_group.sprites()[0].rect.collidepoint(x, y):
             if cells_flag[0] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[0] = 1
-                print(0)
                 player.money -= 300
                 towers.append(Tower1(0, 128, 10, 0.5, 300, 150))
 
 
 # ---------------------------------------------------------------------
     # функция создания врагов
+
+
     def creating_enemys():
         for i in range(10):
             shapes.append(Shape1(160, (2 * i) * 64, 5, 10, 40))
@@ -366,17 +380,16 @@ size)  # Экран на который накладываются кнопки 
 
 
     def gameplay():
-        print(towers)
-        if first_level_screen:
-            creating_tower()
-            for tower in towers:
-                tower.Draw()
-                tower.shooting()
-            for shape in shapes:
-                shape.Draw()
-            for bullet in bullets:
-                bullet.move(1, 0)
-                bullet.Draw()
+        creating_tower()
+        for tower in towers:
+            tower.Draw()
+            tower.shooting()
+        for shape in shapes:
+            shape.Draw()
+        for bullet in bullets:
+            bullet.move(1, 0)
+            bullet.Draw()
+
     generate_level(load_level("1map.txt"))
     f2 = pygame.font.SysFont('comic sans', 66)
 
@@ -386,12 +399,7 @@ size)  # Экран на который накладываются кнопки 
         if level_choise_flag:
             load_level_choise_menu()  # Функция загрузки меню выбора уровней
         if first_lvl_start:
-            background = load_image("first_map.png")
-            background_show = pygame.transform.scale(background, (1920, 1080))
-            first_level_screen.blit(background_show, (0, 0))
-            towers_group.draw(first_level_screen)  # Отрисовка карты первого уровня
-            tower_select_menu = SelectUpgradeMenu(buttons_level1)
-            buttons_level1.draw(first_level_screen)
+            load_first_level()
 
             money = f2.render(str(player.money), False, yellow)
             health = f2.render(str(player.health), False, red)
@@ -404,7 +412,7 @@ size)  # Экран на который накладываются кнопки 
             first_level_screen.blit(health_text, (470, 20))
             gameplay()
             creating_enemys()
-
+        print(clock.get_fps())
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -435,5 +443,7 @@ size)  # Экран на который накладываются кнопки 
                         if towers_group.sprites()[i].rect.collidepoint(x, y):
                             print(i)  # печатает номер выбранной клеточки
                             secret_important_number = i  # запоминает выбранную клеточку
+        pygame.display.update()
         clock.tick(FPS)
-        pygame.display.flip()
+
+pygame.quit()

@@ -1,15 +1,13 @@
 import sys
 import os
 import threading
-import time
-
 import pygame
 import math
 from classes import LevelChoiseMenuButton, ShopButton, ExitButton, ButtonBackLvlChoise, ButtonFirstLvl, load_image, \
-    TowerCell, Player, SelectUpgradeMenu
+    TowerCell,  SelectUpgradeMenu
+import sqlite3
 
-
-
+event = threading.Event()
 
 clock = pygame.time.Clock()
 FPS = 25
@@ -53,9 +51,57 @@ def generate_level(level):  # Генерация уровня 1
             if level[y][x] == '@':
                 TowerCell(x, y, towers_group)
 
+killed_bosses = 0
+killed_shapes = 0 # для загрузки и сохранения в бд
+total_earned = 0
+
+# def load_bd():
+#     with sqlite3.connect("./database/player_stats.db") as con:
+#         cur = con.cursor()
+#         cur.execute("""
+#             select killed_bosses, killed_shapes, total_earned from stats""", )
+#         a = cur.fetchall()
+#         print(a)
+#         if a:
+#             data = cur.execute(("""
+#                 select killed_bosses, killed_shapes, total_earned from stats"""))
+#         for row in a:
+#             for i in row:
+#                 counter = 0
+#                 if counter == 0:
+#                     killed_bosses = i
+#                 if counter == 1:
+#                     killed_shapes = i
+#                 if counter == 2:
+#                     total_earned = i
+#                 counter += 1
+#             print(killed_shapes, killed_bosses, total_earned)
+#
+#
+# def save_all():
+#     with sqlite3.connect("./database/player_stats.db") as con:
+#         cur = con.cursor()
+#         table = cur.execute("""UPDATE stats
+#                     SET killed_bosses = ?, killed_shapes = ?, total_earned = ?""", (
+#             killed_bosses, killed_shapes, total_earned))
+#         if table:
+#             print(6455634473567356346)
+#             print(table)
+#         else:
+#             cur.execute(("""INSERT INTO stats (killed_bosses, killed_shapes, total_earned)
+#              VALUES (?, ?, ?)
+#                 """, (0, 0, 0)))
+#         con.commit()
+#     print("Cохранено!")
 
 if __name__ == '__main__':
     pygame.init()
+    # save_all()
+    # load_bd()
+    pygame.mixer.music.load("music/Walkman.wav")
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(0.2)
+    print(pygame.mixer.music.get_volume())
     width, height = 1920, 1080
     size = width, height
 
@@ -77,17 +123,37 @@ size)
     towers_group = pygame.sprite.Group() # Группа со спрайтами клеток
 
     really_tower_group = pygame.sprite.Group() # группа спрайтика первой башни
-    first_enemy_group = pygame.sprite.Group() # группа спрата первого врага
+    second_tower_group = pygame.sprite.Group() # группа спрайта 2 башни
+
+    first_enemy_group = pygame.sprite.Group() # группа спрайта первого врага
+    second_enemy_group = pygame.sprite.Group() # группа спрайта второго врага
+    first_boss_group = pygame.sprite.Group() # группа спрайта первого босса
 
     tower1 = pygame.sprite.Sprite()
     tower1.image = load_image("common_lvl1.png").convert_alpha()
     tower1.rect = tower1.image.get_rect()
     really_tower_group.add(tower1)
 
+    tower2 = pygame.sprite.Sprite()
+    tower2.image = load_image("common_lvl4.png").convert_alpha()
+    tower2.rect = tower2.image.get_rect()
+    second_tower_group.add(tower2)
+
     enemy1 = pygame.sprite.Sprite()
     enemy1.image = load_image("enemy1.png").convert_alpha()
-    enemy1.rect = tower1.image.get_rect()
+    enemy1.rect = enemy1.image.get_rect()
+
+    enemy2 = pygame.sprite.Sprite()
+    enemy2.image = load_image("enemy2.png").convert_alpha()
+    enemy2.rect = enemy2.image.get_rect()
+
+    boss1 = pygame.sprite.Sprite()
+    boss1.image = load_image("boss1_1.png").convert_alpha()
+    boss1.rect = boss1.image.get_rect()
+
+    second_enemy_group.add(enemy2)
     first_enemy_group.add(enemy1)
+    first_boss_group.add(boss1)
 
     first_level_screen = pygame.display.set_mode(size) # Экран, на котором рисуется первый уровень
 
@@ -110,10 +176,19 @@ size)
     # Создание кнопок в меню выбора уровня
     tower_select_menu = SelectUpgradeMenu(buttons_level1)
 
+
+
+
+
     level_choise_flag = False  # Если этот флаг активен, будет загружаться меню выбора уровня
     main_menu_flag = True  # Если этот флаг активен, будет загружаться главное меню
     first_lvl_start = False
 
+    class Player:
+        def __init__(self, Money, Health, Wave):
+            self.money = Money
+            self.health = Health
+            self.wave = Wave
 
 
     red = (255, 0, 0)
@@ -122,12 +197,13 @@ size)
     cells_flag = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                   ] # флаг активированных клеток
+    wave = 0 # текущая волна в игре
     towers = [] # список поставленных башен
     shapes = [] # список текущих на экране врагов
     bullets = [] # список текущих на экране пуль
     shapes_way = [] # список из клеток путя врагов
     way_points = [] # список точек на карте, к которым они должны идти(чтобы вручную весь путь не рисовать)
-    player = Player(9000, 10) # у игрока 350 монет и 10 жизней
+    player = Player(9000, 10, 0) # у игрока 350 монет и 10 жизней
 
 
     def create_shapes_way(level): # создаёт пути, по которому идут враги
@@ -148,10 +224,6 @@ size)
                         way_points.append([x * 128 + 64 // 2, y * 128 + 64 // 2, 10, 10])
                         int_point += 1
                         point = str(int_point)
-        print(way_points)
-    def draw_shapes_way():
-        for way in shapes_way:
-            pygame.draw.rect(first_level_screen, yellow, way)
 
     class Tower1:
         def __init__(self, x, y,  damage, cd,  price, range):
@@ -170,7 +242,29 @@ size)
 
         def shooting(self):
             if self.firerate_tick <= 0:
-                creating_bullets(self.x, self.y, cyan, 15, 1, 25)
+                creating_bullets(self.x, self.y, cyan, 8, 1, 25)
+                self.firerate_tick = self.firerate
+            else:
+                self.firerate_tick -= 1 / FPS
+
+    class Tower2:
+        def __init__(self, x, y,  damage, cd,  price, range):
+            self.x = x
+            self.y = y
+            self.damage = damage
+            self.firerate = cd # время перезарядки
+            self.firerate_tick = 0 # выступает в качестве таймера для firerate
+            self.price = price
+            self.range = range
+
+        def Draw(self):
+            tower2.rect.x = self.x
+            tower2.rect.y = self.y
+            second_tower_group.draw(first_level_screen)
+
+        def shooting(self):
+            if self.firerate_tick <= 0:
+                creating_bullets(self.x, self.y, red, 15, 4, 25)
                 self.firerate_tick = self.firerate
             else:
                 self.firerate_tick -= 1 / FPS
@@ -205,6 +299,54 @@ size)
             enemy1.rect.x = self.x
             enemy1.rect.y = self.y
             first_enemy_group.draw(first_level_screen)
+
+        def Move(self):  # для движения умножаем значения векторов на скорость и прибавлять его к координатам
+            move = homing_calculation(self.x, self.y, way_points[self.point][0], way_points[self.point][1])
+            self.x += self.speed * move[0]
+            self.y += self.speed * move[1]
+            if move[2] <= self.speed:
+                self.point += 1
+                if self.point == len(way_points):
+                    shapes.remove(self)
+                    player.health -= 1
+
+    class Shape2:               # класс врага второго
+        def __init__(self, x, y, hp, speed, reward):
+            self.x = x
+            self.y = y
+            self.speed = speed
+            self.point = 0
+            self.reward = reward
+            self.hp = hp
+
+        def Draw(self):
+            enemy2.rect.x = self.x
+            enemy2.rect.y = self.y
+            second_enemy_group.draw(first_level_screen)
+
+        def Move(self):  # для движения умножаем значения векторов на скорость и прибавлять его к координатам
+            move = homing_calculation(self.x, self.y, way_points[self.point][0], way_points[self.point][1])
+            self.x += self.speed * move[0]
+            self.y += self.speed * move[1]
+            if move[2] <= self.speed:
+                self.point += 1
+                if self.point == len(way_points):
+                    shapes.remove(self)
+                    player.health -= 1
+
+    class Boss1:               # класс первого босса
+        def __init__(self, x, y, hp, speed, reward):
+            self.x = x
+            self.y = y
+            self.speed = speed
+            self.point = 0
+            self.reward = reward
+            self.hp = hp
+
+        def Draw(self):
+            boss1.rect.x = self.x
+            boss1.rect.y = self.y
+            first_boss_group.draw(first_level_screen)
 
         def Move(self):  # для движения умножаем значения векторов на скорость и прибавлять его к координатам
             move = homing_calculation(self.x, self.y, way_points[self.point][0], way_points[self.point][1])
@@ -403,12 +545,24 @@ size)
                 cells_flag[1] = 1
                 print(1)
                 player.money -= 300
-                towers.append(Tower1(256, 128, 10, 1.5, 300, 150))
+                towers.append(Tower1(256, 128, 1, 1.5, 300, 150))
         if towers_group.sprites()[0].rect.collidepoint(x, y):
             if cells_flag[0] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[0] = 1
                 player.money -= 300
-                towers.append(Tower1(0, 128, 10, 1.5, 300, 150))
+                towers.append(Tower1(0, 128, 1, 1.5, 300, 150))
+        if towers_group.sprites()[26].rect.collidepoint(x, y):
+            if cells_flag[26] != 1 and keys[pygame.K_2] and player.money - 850 >= 0:
+                cells_flag[26] = 1
+                player.money -= 850
+                towers.append(Tower2(1024, 896, 4, 4, 850, 150))
+                print(26)
+        if towers_group.sprites()[25].rect.collidepoint(x, y):
+            if cells_flag[25] != 1 and keys[pygame.K_2] and player.money - 850 >= 0:
+                cells_flag[25] = 1
+                player.money -= 850
+                towers.append(Tower2(896, 896, 4, 4, 850, 150))
+                print(25)
 
 
 # ---------------------------------------------------------------------
@@ -416,9 +570,53 @@ size)
 
 
     def creating_enemys():
-        for i in range(30, 1, -1):
-            shapes.append(Shape1(160, (1 * i) * 16, 3, 6, 40))
-
+        if player.wave == 1:
+            for i in range(3, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+        if player.wave == 2:
+            for i in range(4, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+        if player.wave == 3:
+            for i in range(6, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+        if player.wave == 3:
+            for i in range(8, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+        if player.wave == 4:
+            for i in range(6, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 32, 3, 6, 20))
+            for i in range(3, 0, -1):
+                shapes.append(Shape2(160, (1 * i) * 64, 10, 4, 65))
+        if player.wave == 5:
+            for i in range(10, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+            for i in range(6, 0, -1):
+                shapes.append(Shape2(160, (1 * i) * 64, 10, 4, 65))
+        if player.wave == 6:
+            for i in range(15, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 8, 3, 6, 20))
+        if player.wave == 7:
+            for i in range(4, 0, -1):
+                shapes.append(Shape2(160, (1 * i) * 64, 10, 4, 65))
+            shapes.append(Boss1(160, (1 * i) * 0, 75, 2, 450))
+        if player.wave == 8:
+            for i in range(15, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 8, 3, 6, 20))
+        if player.wave == 9:
+            for i in range(9, 0, -1):
+                shapes.append(Shape2(160, (2 * i) * 32, 10, 4, 65))
+        if player.wave == 10:
+            for i in range(10, 0, -1):
+                shapes.append(Shape2(160, (2 * i) * 32, 10, 4, 65))
+            shapes.append(Boss1(160, (1 * i) * 0, 75, 2, 450))
+        if player.wave == 11:
+            for i in range(35, 0, -1):
+                shapes.append(Shape1(160, (2 * i) * 4, 3, 6, 20))
+        if player.wave == 12:
+            for i in range(4, 0, -1):
+                shapes.append(Shape2(160, (2 * i) * 4, 10, 4, 65))
+            for i in range(3, 0, -1):
+                shapes.append(Boss1(160, (1 * i) * 32, 75, 2, 450))
 
     def creating_bullets(x, y, color, size, dmg, speed):
         bullets.append(Bullet(x, y, color, size, dmg, speed))
@@ -428,7 +626,9 @@ size)
             if shape.hp <= 0:
                 shapes.remove(shape)
                 player.money += shape.reward
-
+        if len(shapes) == 0:
+            player.wave += 1
+            creating_enemys()
 
     generate_level(load_level("1map.txt"))
     create_shapes_way(load_level("1map.txt"))
@@ -436,10 +636,7 @@ size)
     f2 = pygame.font.SysFont('comic sans', 66)
 
     def gameplay():
-        draw_shapes_way()
         creating_tower()
-        for points in way_points:
-            pygame.draw.rect(first_level_screen, red, points)
         for tower in towers:
             tower.Draw()
             tower.shooting()
@@ -455,36 +652,34 @@ size)
             bullet.Draw()
         if_shape_died()
 
-    enemys_in_map = False # есть ли враги на карте
-
-
     while True:
         if main_menu_flag:
             load_main_menu()  # Функция загрузки главного меню
         if level_choise_flag:
             load_level_choise_menu()  # Функция загрузки меню выбора уровней
         if first_lvl_start:
-            if enemys_in_map == False:
-                creating_enemys()
-                enemys_in_map = True
             load_first_level()
 
             money = f2.render(str(player.money), False, yellow)
             health = f2.render(str(player.health), False, red)
+            waves = f2.render(str(player.wave), False, ("#ff8c01"))
 
             money_text = f2.render(("Монеты:"), False, yellow)
             health_text = f2.render(("Жизни:"), False, red)
+            wave_text = f2.render(("Волна:     /12"), False, "#ff8c01")
             first_level_screen.blit(money, (1300, 20))
             first_level_screen.blit(health, (700, 20))
             first_level_screen.blit(money_text, (1020, 20))
             first_level_screen.blit(health_text, (470, 20))
+            first_level_screen.blit(wave_text, (1400, 980))
+            first_level_screen.blit(waves, (1650, 980))
             gameplay()
-        print(clock.get_fps())
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:  # Обработка нажатия на кнопку
+                # save_all()
                 x, y = event.pos
                 if buttons_main_menu.sprites()[0].rect.collidepoint(x, y) and main_menu_flag:
                     level_choise_flag = True
@@ -511,5 +706,5 @@ size)
                             print(i)  # печатает номер выбранной клеточки
                             secret_important_number = i  # запоминает выбранную клеточку
         pygame.display.update()
-        clock.tick(FPS)
+        clock.tick(60)
 pygame.quit()

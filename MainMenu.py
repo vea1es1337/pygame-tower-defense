@@ -10,7 +10,7 @@ import sqlite3
 event = threading.Event()
 
 clock = pygame.time.Clock()
-FPS = 25
+FPS = 30
 
 def load_main_menu():
     background = load_image("background.png").convert_alpha()
@@ -124,6 +124,7 @@ size)
 
     really_tower_group = pygame.sprite.Group() # группа спрайтика первой башни
     second_tower_group = pygame.sprite.Group() # группа спрайта 2 башни
+    fourth_tower_group = pygame.sprite.Group()  # группа спрайта 4 башни
 
     first_enemy_group = pygame.sprite.Group() # группа спрайта первого врага
     second_enemy_group = pygame.sprite.Group() # группа спрайта второго врага
@@ -135,9 +136,14 @@ size)
     really_tower_group.add(tower1)
 
     tower2 = pygame.sprite.Sprite()
-    tower2.image = load_image("common_lvl4.png").convert_alpha()
+    tower2.image = load_image("common_lvl2.png").convert_alpha()
     tower2.rect = tower2.image.get_rect()
     second_tower_group.add(tower2)
+
+    tower4 = pygame.sprite.Sprite()
+    tower4.image = load_image("common_lvl4.png").convert_alpha()
+    tower4.rect = tower4.image.get_rect()
+    fourth_tower_group.add(tower4)
 
     enemy1 = pygame.sprite.Sprite()
     enemy1.image = load_image("enemy1.png").convert_alpha()
@@ -194,6 +200,7 @@ size)
     red = (255, 0, 0)
     yellow = (255, 255, 0)
     cyan = (20, 175, 255)
+    cyan2 = (60, 255, 240)
     cells_flag = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                   ] # флаг активированных клеток
@@ -203,7 +210,7 @@ size)
     bullets = [] # список текущих на экране пуль
     shapes_way = [] # список из клеток путя врагов
     way_points = [] # список точек на карте, к которым они должны идти(чтобы вручную весь путь не рисовать)
-    player = Player(9000, 10, 0) # у игрока 350 монет и 10 жизней
+    player = Player(1000, 10, 0) # у игрока 350 монет и 10 жизней
 
 
     def create_shapes_way(level): # создаёт пути, по которому идут враги
@@ -241,11 +248,13 @@ size)
             really_tower_group.draw(first_level_screen)
 
         def shooting(self):
-            if self.firerate_tick <= 0:
-                creating_bullets(self.x, self.y, cyan, 8, 1, 25)
+            homing = homing_calculation(self.x, self.y, shapes[0].x, shapes[0].y)
+            if self.firerate_tick <= 0 and homing[2] < self.range:
+                creating_bullets(self.x, self.y, cyan, 10, 1, 25)
                 self.firerate_tick = self.firerate
             else:
                 self.firerate_tick -= 1 / FPS
+
 
     class Tower2:
         def __init__(self, x, y,  damage, cd,  price, range):
@@ -263,8 +272,32 @@ size)
             second_tower_group.draw(first_level_screen)
 
         def shooting(self):
-            if self.firerate_tick <= 0:
-                creating_bullets(self.x, self.y, red, 15, 4, 25)
+            homing = homing_calculation(self.x, self.y, shapes[0].x, shapes[0].y)
+            if self.firerate_tick <= 0 and homing[2] < self.range:
+                creating_bullets(self.x, self.y, cyan2, 10, 2, 25)
+                self.firerate_tick = self.firerate
+            else:
+                self.firerate_tick -= 1 / FPS
+
+    class Tower4:
+        def __init__(self, x, y,  damage, cd,  price, range):
+            self.x = x
+            self.y = y
+            self.damage = damage
+            self.firerate = cd # время перезарядки
+            self.firerate_tick = 0 # выступает в качестве таймера для firerate
+            self.price = price
+            self.range = range
+
+        def Draw(self):
+            tower4.rect.x = self.x
+            tower4.rect.y = self.y
+            fourth_tower_group.draw(first_level_screen)
+
+        def shooting(self):
+            homing = homing_calculation(self.x, self.y, shapes[0].x, shapes[0].y)
+            if self.firerate_tick <= 0 and homing[2] < self.range:
+                creating_bullets(self.x, self.y, red, 15, 10, 65)
                 self.firerate_tick = self.firerate
             else:
                 self.firerate_tick -= 1 / FPS
@@ -375,6 +408,7 @@ size)
     # клеточного поля, которое трогает только клетки, никаких других
     # выходов после поисков я не нашёл, это можно сделать только через if-ы
 
+
     def creating_tower():
         keys = pygame.key.get_pressed()
         x, y = pygame.mouse.get_pos()
@@ -382,187 +416,502 @@ size)
             if cells_flag[26] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[26] = 1
                 player.money -= 300
-                towers.append(Tower1(1024, 896, 10, 1.5, 300, 150))
+                towers.append(Tower1(1024, 896, 1, 1.5, 300, 500))
                 print(26)
         if towers_group.sprites()[25].rect.collidepoint(x, y):
             if cells_flag[25] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[25] = 1
                 player.money -= 300
-                towers.append(Tower1(896, 896, 10, 1.5, 300, 150))
+                towers.append(Tower1(896, 896, 1, 1.5, 300, 500))
                 print(25)
         if towers_group.sprites()[24].rect.collidepoint(x, y):
             if cells_flag[24] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[24] = 1
                 player.money -= 300
-                towers.append(Tower1(640, 896, 10, 1.5, 300, 150))
+                towers.append(Tower1(640, 896, 1, 1.5, 300, 500))
                 print(24)
         if towers_group.sprites()[23].rect.collidepoint(x, y):
             if cells_flag[23] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 print(23)
                 cells_flag[23] = 1
                 player.money -= 300
-                towers.append(Tower1(384, 896, 10, 1.5, 300, 150))
+                towers.append(Tower1(384, 896, 1, 1.5, 300, 50))
                 print(towers)
         if towers_group.sprites()[22].rect.collidepoint(x, y):
             if cells_flag[22] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[22] = 1
                 print(22)
                 player.money -= 300
-                towers.append(Tower1(128, 896, 10, 1.5, 300, 150))
+                towers.append(Tower1(128, 896, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[21].rect.collidepoint(x, y):
             if cells_flag[21] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[21] = 1
                 print(21)
                 player.money -= 300
-                towers.append(Tower1(0, 768, 10, 1.5, 300, 150))
+                towers.append(Tower1(0, 768, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[20].rect.collidepoint(x, y):
             if cells_flag[20] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[20] = 1
                 print(20)
                 player.money -= 300
-                towers.append(Tower1(896, 640, 10, 1.5, 300, 150))
+                towers.append(Tower1(896, 640, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[19].rect.collidepoint(x, y):
             if cells_flag[19] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[19] = 1
                 print(19)
                 player.money -= 300
-                towers.append(Tower1(384, 640, 10, 1.5, 300, 150))
+                towers.append(Tower1(384, 640, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[18].rect.collidepoint(x, y):
             if cells_flag[18] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[18] = 1
                 print(18)
                 player.money -= 300
-                towers.append(Tower1(256, 640, 10, 1.5, 300, 150))
+                towers.append(Tower1(256, 640, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[17].rect.collidepoint(x, y):
             if cells_flag[17] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[17] = 1
                 print(17)
                 player.money -= 300
-                towers.append(Tower1(0, 640, 10, 1.5, 300, 150))
+                towers.append(Tower1(0, 640, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[16].rect.collidepoint(x, y):
             if cells_flag[16] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[16] = 1
                 print(16)
                 player.money -= 300
-                towers.append(Tower1(1152, 512, 10, 1.5, 300, 150))
+                towers.append(Tower1(1152, 512, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[15].rect.collidepoint(x, y):
             if cells_flag[15] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[15] = 1
                 print(15)
                 player.money -= 300
-                towers.append(Tower1(896, 512, 10, 1.5, 300, 150))
+                towers.append(Tower1(896, 512, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[14].rect.collidepoint(x, y):
             if cells_flag[14] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[14] = 1
                 print(14)
                 player.money -= 300
-                towers.append(Tower1(512, 512, 10, 1.5, 300, 150))
+                towers.append(Tower1(512, 512, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[13].rect.collidepoint(x, y):
             if cells_flag[13] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[13] = 1
                 print(13)
                 player.money -= 300
-                towers.append(Tower1(256, 512, 10, 1.5, 300, 150))
+                towers.append(Tower1(256, 512, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[12].rect.collidepoint(x, y):
             if cells_flag[12] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[12] = 1
                 print(12)
                 player.money -= 300
-                towers.append(Tower1(0, 512, 10, 1.5, 300, 150))
+                towers.append(Tower1(0, 512, 1, 1.5, 300, 500))
                 print(towers)
         if towers_group.sprites()[11].rect.collidepoint(x, y):
             if cells_flag[11] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[11] = 1
                 print(11)
                 player.money -= 300
-                towers.append(Tower1(896, 384, 10, 1.5, 300, 150))
+                towers.append(Tower1(896, 384, 1, 1.5, 300, 500))
         if towers_group.sprites()[10].rect.collidepoint(x, y):
             if cells_flag[10] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[10] = 1
                 print(10)
                 player.money -= 300
-                towers.append(Tower1(512, 384, 10, 1.5, 300, 150))
+                towers.append(Tower1(512, 384, 1, 1.5, 300, 500))
         if towers_group.sprites()[9].rect.collidepoint(x, y):
             if cells_flag[9] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[9] = 1
                 print(9)
                 player.money -= 300
-                towers.append(Tower1(256, 384, 10, 1.5, 300, 150))
+                towers.append(Tower1(256, 384, 1, 1.5, 300, 500))
         if towers_group.sprites()[8].rect.collidepoint(x, y):
             if cells_flag[8] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[8] = 1
                 print(8)
                 player.money -= 300
-                towers.append(Tower1(0, 384, 10, 1.5, 300, 150))
+                towers.append(Tower1(0, 384, 1, 1.5, 300, 500))
         if towers_group.sprites()[7].rect.collidepoint(x, y):
             if cells_flag[7] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[7] = 1
                 print(7)
                 player.money -= 300
-                towers.append(Tower1(256, 256, 10, 1.5, 300, 150))
+                towers.append(Tower1(256, 256, 1, 1.5, 300, 500))
         if towers_group.sprites()[6].rect.collidepoint(x, y):
             if cells_flag[6] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[6] = 1
                 print(6)
                 player.money -= 300
-                towers.append(Tower1(0, 256, 10, 1.5, 300, 150))
+                towers.append(Tower1(0, 256, 1, 1.5, 300, 500))
         if towers_group.sprites()[5].rect.collidepoint(x, y):
             if cells_flag[5] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[5] = 1
                 print(5)
                 player.money -= 300
-                towers.append(Tower1(1024, 128, 10, 1.5, 300, 150))
+                towers.append(Tower1(1024, 128, 1, 1.5, 300, 500))
         if towers_group.sprites()[4].rect.collidepoint(x, y):
             if cells_flag[4] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[4] = 1
                 print(4)
                 player.money -= 300
-                towers.append(Tower1(896, 128, 10, 1.5, 300, 150))
+                towers.append(Tower1(896, 128, 1, 1.5, 300, 500))
         if towers_group.sprites()[3].rect.collidepoint(x, y):
             if cells_flag[3] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[3] = 1
                 print(3)
                 player.money -= 300
-                towers.append(Tower1(768, 128, 10, 1.5, 300, 150))
+                towers.append(Tower1(768, 128, 1, 1.5, 300, 500))
         if towers_group.sprites()[2].rect.collidepoint(x, y):
             if cells_flag[2] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[2] = 1
                 print(2)
                 player.money -= 300
-                towers.append(Tower1(512, 128, 10, 1.5, 300, 150))
+                towers.append(Tower1(512, 128, 1, 1.5, 300, 500))
         if towers_group.sprites()[1].rect.collidepoint(x, y):
             if cells_flag[1] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[1] = 1
                 print(1)
                 player.money -= 300
-                towers.append(Tower1(256, 128, 1, 1.5, 300, 150))
+                towers.append(Tower1(256, 128, 1, 1.5, 300, 500))
         if towers_group.sprites()[0].rect.collidepoint(x, y):
             if cells_flag[0] != 1 and keys[pygame.K_1] and player.money - 300 >= 0:
                 cells_flag[0] = 1
                 player.money -= 300
-                towers.append(Tower1(0, 128, 1, 1.5, 300, 150))
+                towers.append(Tower1(0, 128, 1, 1.5, 300, 500))
+
         if towers_group.sprites()[26].rect.collidepoint(x, y):
-            if cells_flag[26] != 1 and keys[pygame.K_2] and player.money - 850 >= 0:
+            if cells_flag[26] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
                 cells_flag[26] = 1
-                player.money -= 850
-                towers.append(Tower2(1024, 896, 4, 4, 850, 150))
+                player.money -= 450
+                towers.append(Tower2(1024, 896, 2, 1.5, 450, 550))
                 print(26)
         if towers_group.sprites()[25].rect.collidepoint(x, y):
-            if cells_flag[25] != 1 and keys[pygame.K_2] and player.money - 850 >= 0:
+            if cells_flag[25] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[25] = 1
+                player.money -= 450
+                towers.append(Tower2(896, 896, 2, 1.5, 450, 550))
+                print(25)
+        if towers_group.sprites()[24].rect.collidepoint(x, y):
+            if cells_flag[24] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[24] = 1
+                player.money -= 450
+                towers.append(Tower2(640, 896, 2, 1.5, 450, 550))
+                print(24)
+        if towers_group.sprites()[23].rect.collidepoint(x, y):
+            if cells_flag[23] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                print(23)
+                cells_flag[23] = 1
+                player.money -= 450
+                towers.append(Tower2(384, 896, 2, 1.5, 450, 550))
+        if towers_group.sprites()[22].rect.collidepoint(x, y):
+            if cells_flag[22] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[22] = 1
+                print(22)
+                player.money -= 450
+                towers.append(Tower2(128, 896, 2, 1.5, 450, 550))
+        if towers_group.sprites()[21].rect.collidepoint(x, y):
+            if cells_flag[21] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[21] = 1
+                print(21)
+                player.money -= 450
+                towers.append(Tower2(0, 768, 2, 1.5, 450, 550))
+        if towers_group.sprites()[20].rect.collidepoint(x, y):
+            if cells_flag[20] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[20] = 1
+                print(20)
+                player.money -= 450
+                towers.append(Tower2(896, 640, 2, 1.5, 450, 550))
+        if towers_group.sprites()[19].rect.collidepoint(x, y):
+            if cells_flag[19] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[19] = 1
+                print(19)
+                player.money -= 450
+                towers.append(Tower2(384, 640, 2, 1.5, 450, 550))
+        if towers_group.sprites()[18].rect.collidepoint(x, y):
+            if cells_flag[18] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[18] = 1
+                print(18)
+                player.money -= 450
+                towers.append(Tower2(256, 640, 2, 1.5, 450, 550))
+        if towers_group.sprites()[17].rect.collidepoint(x, y):
+            if cells_flag[17] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[17] = 1
+                print(17)
+                player.money -= 450
+                towers.append(Tower2(0, 640, 2, 1.5, 450, 6550))
+        if towers_group.sprites()[16].rect.collidepoint(x, y):
+            if cells_flag[16] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[16] = 1
+                print(16)
+                player.money -= 450
+                towers.append(Tower2(1152, 512, 2, 1.5, 450, 550))
+        if towers_group.sprites()[15].rect.collidepoint(x, y):
+            if cells_flag[15] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[15] = 1
+                print(15)
+                player.money -= 450
+                towers.append(Tower2(896, 512, 2, 1.5, 450, 550))
+        if towers_group.sprites()[14].rect.collidepoint(x, y):
+            if cells_flag[14] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[14] = 1
+                print(14)
+                player.money -= 450
+                towers.append(Tower2(512, 512, 2, 1.5, 450, 550))
+        if towers_group.sprites()[13].rect.collidepoint(x, y):
+            if cells_flag[13] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[13] = 1
+                print(13)
+                player.money -= 450
+                towers.append(Tower2(256, 512, 2, 1.5, 450, 550))
+        if towers_group.sprites()[12].rect.collidepoint(x, y):
+            if cells_flag[12] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[12] = 1
+                print(12)
+                player.money -= 450
+                towers.append(Tower2(0, 512, 2, 1.5, 450, 550))
+                print(towers)
+        if towers_group.sprites()[11].rect.collidepoint(x, y):
+            if cells_flag[11] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[11] = 1
+                print(11)
+                player.money -= 450
+                towers.append(Tower2(896, 384, 2, 1.5, 450, 550))
+        if towers_group.sprites()[10].rect.collidepoint(x, y):
+            if cells_flag[10] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[10] = 1
+                print(10)
+                player.money -= 450
+                towers.append(Tower2(512, 384, 2, 1.5, 450, 550))
+        if towers_group.sprites()[9].rect.collidepoint(x, y):
+            if cells_flag[9] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[9] = 1
+                print(9)
+                player.money -= 450
+                towers.append(Tower2(256, 384, 2, 1.5, 450, 550))
+        if towers_group.sprites()[8].rect.collidepoint(x, y):
+            if cells_flag[8] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[8] = 1
+                print(8)
+                player.money -= 450
+                towers.append(Tower2(0, 384, 2, 1.5, 450, 550))
+        if towers_group.sprites()[7].rect.collidepoint(x, y):
+            if cells_flag[7] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[7] = 1
+                print(7)
+                player.money -= 450
+                towers.append(Tower2(256, 256, 2, 1.5, 450, 550))
+        if towers_group.sprites()[6].rect.collidepoint(x, y):
+            if cells_flag[6] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[6] = 1
+                print(6)
+                player.money -= 450
+                towers.append(Tower2(0, 256, 2, 1.5, 450, 550))
+        if towers_group.sprites()[5].rect.collidepoint(x, y):
+            if cells_flag[5] != 1 and keys[pygame.K_2] and player.money - 300 >= 0:
+                cells_flag[5] = 1
+                print(5)
+                player.money -= 450
+                towers.append(Tower2(1024, 128, 2, 1.5, 450, 550))
+        if towers_group.sprites()[4].rect.collidepoint(x, y):
+            if cells_flag[4] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[4] = 1
+                print(4)
+                player.money -= 450
+                towers.append(Tower2(896, 128, 2, 1.5, 450, 550))
+        if towers_group.sprites()[3].rect.collidepoint(x, y):
+            if cells_flag[3] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[3] = 1
+                print(3)
+                player.money -= 450
+                towers.append(Tower2(768, 128, 2, 1.5, 450, 550))
+        if towers_group.sprites()[2].rect.collidepoint(x, y):
+            if cells_flag[2] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[2] = 1
+                print(2)
+                player.money -= 450
+                towers.append(Tower2(512, 128, 2, 1.5, 450, 550))
+        if towers_group.sprites()[1].rect.collidepoint(x, y):
+            if cells_flag[1] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[1] = 1
+                print(1)
+                player.money -= 450
+                towers.append(Tower2(256, 128, 2, 1.5, 450, 550))
+        if towers_group.sprites()[0].rect.collidepoint(x, y):
+            if cells_flag[0] != 1 and keys[pygame.K_2] and player.money - 450 >= 0:
+                cells_flag[0] = 1
+                player.money -= 450
+                towers.append(Tower2(0, 128, 2, 1.5, 450, 550))
+
+        if towers_group.sprites()[26].rect.collidepoint(x, y):
+            if cells_flag[26] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[26] = 1
+                player.money -= 850
+                towers.append(Tower4(1024, 896, 10, 4.5, 900, 2000))
+                print(26)
+        if towers_group.sprites()[25].rect.collidepoint(x, y):
+            if cells_flag[25] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
                 cells_flag[25] = 1
                 player.money -= 850
-                towers.append(Tower2(896, 896, 4, 4, 850, 150))
+                towers.append(Tower4(896, 896, 10, 4.5, 900, 2000))
                 print(25)
+        if towers_group.sprites()[24].rect.collidepoint(x, y):
+            if cells_flag[24] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[24] = 1
+                player.money -= 850
+                towers.append(Tower4(640, 896, 10, 4.5, 900, 2000))
+                print(24)
+        if towers_group.sprites()[23].rect.collidepoint(x, y):
+            if cells_flag[23] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[23] = 1
+                player.money -= 850
+                towers.append(Tower4(384, 896, 10, 4.5, 900, 2000))
+                print(23)
+        if towers_group.sprites()[22].rect.collidepoint(x, y):
+            if cells_flag[22] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[22] = 1
+                player.money -= 850
+                towers.append(Tower4(128, 896, 10, 4.5, 900, 2000))
+                print(22)
+        if towers_group.sprites()[21].rect.collidepoint(x, y):
+            if cells_flag[21] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[21] = 1
+                player.money -= 850
+                towers.append(Tower4(0, 768, 10, 4.5, 900, 2000))
+                print(21)
+        if towers_group.sprites()[20].rect.collidepoint(x, y):
+            if cells_flag[20] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[20] = 1
+                player.money -= 850
+                towers.append(Tower4(896, 640, 10, 4.5, 900, 2000))
+                print(20)
+        if towers_group.sprites()[19].rect.collidepoint(x, y):
+            if cells_flag[19] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[19] = 1
+                player.money -= 850
+                towers.append(Tower4(384, 640, 10, 4.5, 900, 2000))
+                print(19)
+        if towers_group.sprites()[18].rect.collidepoint(x, y):
+            if cells_flag[18] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[18] = 1
+                player.money -= 850
+                towers.append(Tower4(256, 640, 10, 4.5, 900, 2000))
+                print(18)
+        if towers_group.sprites()[17].rect.collidepoint(x, y):
+            if cells_flag[17] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[17] = 1
+                player.money -= 850
+                towers.append(Tower4(0, 640, 10, 4.5, 900, 2000))
+                print(17)
+        if towers_group.sprites()[16].rect.collidepoint(x, y):
+            if cells_flag[16] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[16] = 1
+                player.money -= 850
+                towers.append(Tower4(1152, 512, 10, 4.5, 900, 2000))
+                print(16)
+        if towers_group.sprites()[15].rect.collidepoint(x, y):
+            if cells_flag[15] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[15] = 1
+                player.money -= 850
+                towers.append(Tower4(896, 512, 10, 4.5, 900, 2000))
+                print(15)
+        if towers_group.sprites()[14].rect.collidepoint(x, y):
+            if cells_flag[14] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[14] = 1
+                player.money -= 850
+                towers.append(Tower4(512, 512, 10, 4.5, 900, 2000))
+                print(14)
+        if towers_group.sprites()[13].rect.collidepoint(x, y):
+            if cells_flag[13] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[13] = 1
+                player.money -= 850
+                towers.append(Tower4(256, 512, 10, 4.5, 900, 2000))
+                print(13)
+        if towers_group.sprites()[12].rect.collidepoint(x, y):
+            if cells_flag[12] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[12] = 1
+                player.money -= 850
+                towers.append(Tower4(0, 512, 10, 4.5, 900, 2000))
+                print(12)
+        if towers_group.sprites()[11].rect.collidepoint(x, y):
+            if cells_flag[11] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[11] = 1
+                player.money -= 850
+                towers.append(Tower4(896, 384, 10, 4.5, 900, 2000))
+                print(11)
+        if towers_group.sprites()[10].rect.collidepoint(x, y):
+            if cells_flag[10] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[10] = 1
+                player.money -= 850
+                towers.append(Tower4(512, 384, 10, 4.5, 900, 2000))
+                print(10)
+        if towers_group.sprites()[9].rect.collidepoint(x, y):
+            if cells_flag[9] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[9] = 1
+                player.money -= 850
+                towers.append(Tower4(256, 384, 10, 4.5, 900, 2000))
+                print(9)
+        if towers_group.sprites()[8].rect.collidepoint(x, y):
+            if cells_flag[8] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[8] = 1
+                player.money -= 850
+                towers.append(Tower4(0, 384, 10, 4.5, 900, 2000))
+                print(8)
+        if towers_group.sprites()[7].rect.collidepoint(x, y):
+            if cells_flag[7] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[7] = 1
+                player.money -= 850
+                towers.append(Tower4(256, 256, 10, 4.5, 900, 2000))
+                print(7)
+        if towers_group.sprites()[6].rect.collidepoint(x, y):
+            if cells_flag[6] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[6] = 1
+                player.money -= 850
+                towers.append(Tower4(0, 256, 10, 4.5, 900, 2000))
+                print(6)
+        if towers_group.sprites()[5].rect.collidepoint(x, y):
+            if cells_flag[5] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[5] = 1
+                player.money -= 850
+                towers.append(Tower4(1024, 128, 10, 4.5, 900, 2000))
+                print(5)
+        if towers_group.sprites()[4].rect.collidepoint(x, y):
+            if cells_flag[4] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[4] = 1
+                player.money -= 850
+                towers.append(Tower4(896, 128, 10, 4.5, 900, 2000))
+                print(4)
+        if towers_group.sprites()[3].rect.collidepoint(x, y):
+            if cells_flag[3] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[3] = 1
+                player.money -= 850
+                towers.append(Tower4(768, 128, 10, 4.5, 900, 2000))
+                print(3)
+        if towers_group.sprites()[2].rect.collidepoint(x, y):
+            if cells_flag[2] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[2] = 1
+                player.money -= 850
+                towers.append(Tower4(512, 128, 10, 4.5, 900, 2000))
+                print(2)
+        if towers_group.sprites()[1].rect.collidepoint(x, y):
+            if cells_flag[1] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[1] = 1
+                player.money -= 850
+                towers.append(Tower4(256, 128, 10, 4.5, 900, 2000))
+                print(1)
+        if towers_group.sprites()[0].rect.collidepoint(x, y):
+            if cells_flag[0] != 1 and keys[pygame.K_4] and player.money - 850 >= 0:
+                cells_flag[0] = 1
+                player.money -= 850
+                towers.append(Tower4(0, 128, 10, 4.5, 900, 2000))
+                print(0)
+
 
 
 # ---------------------------------------------------------------------
@@ -571,52 +920,89 @@ size)
 
     def creating_enemys():
         if player.wave == 1:
+            bullets.clear()
             for i in range(3, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+                shapes.append(Shape1(160,  i * 16 - 200, 2, 6, 30))
         if player.wave == 2:
+            player.money += 80
+            bullets.clear()
             for i in range(4, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+                shapes.append(Shape1(160, i * 16 - 200, 2, 6, 30))
         if player.wave == 3:
-            for i in range(6, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
-        if player.wave == 3:
-            for i in range(8, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
+            player.money += 90
+            bullets.clear()
+            for i in range(5, 0, -1):
+                shapes.append(Shape1(160, i * 16 - 200, 2, 6, 30))
         if player.wave == 4:
-            for i in range(6, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 32, 3, 6, 20))
-            for i in range(3, 0, -1):
-                shapes.append(Shape2(160, (1 * i) * 64, 10, 4, 65))
+            player.money += 100
+            bullets.clear()
+            for i in range(7, 0, -1):
+                shapes.append(Shape1(160, i * 16 - 200, 2, 6, 30))
         if player.wave == 5:
-            for i in range(10, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 16, 3, 6, 20))
-            for i in range(6, 0, -1):
-                shapes.append(Shape2(160, (1 * i) * 64, 10, 4, 65))
+            player.money += 120
+            bullets.clear()
+            for i in range(4, 0, -1):
+                shapes.append(Shape1(160, i * 32 - 100, 2, 6, 30))
+            for i in range(2, 0, -1):
+                shapes.append(Shape2(160, i * 64 - 250, 10, 4, 65))
         if player.wave == 6:
-            for i in range(15, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 8, 3, 6, 20))
-        if player.wave == 7:
-            for i in range(4, 0, -1):
-                shapes.append(Shape2(160, (1 * i) * 64, 10, 4, 65))
-            shapes.append(Boss1(160, (1 * i) * 0, 75, 2, 450))
-        if player.wave == 8:
-            for i in range(15, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 8, 3, 6, 20))
-        if player.wave == 9:
-            for i in range(9, 0, -1):
-                shapes.append(Shape2(160, (2 * i) * 32, 10, 4, 65))
-        if player.wave == 10:
+            player.money += 130
+            bullets.clear()
             for i in range(10, 0, -1):
-                shapes.append(Shape2(160, (2 * i) * 32, 10, 4, 65))
-            shapes.append(Boss1(160, (1 * i) * 0, 75, 2, 450))
-        if player.wave == 11:
-            for i in range(35, 0, -1):
-                shapes.append(Shape1(160, (2 * i) * 4, 3, 6, 20))
-        if player.wave == 12:
+                shapes.append(Shape1(160, i * 16 - 250, 2, 6, 30))
+            for i in range(2, 0, -1):
+                shapes.append(Shape2(160, i * 64 - 450, 10, 4, 65))
+        if player.wave == 7:
+            player.money += 150
+            bullets.clear()
+            for i in range(12, 0, -1):
+                shapes.append(Shape1(160, i * 8 - 300, 2, 6, 30))
+        if player.wave == 8:
+            player.money += 160
+            bullets.clear()
             for i in range(4, 0, -1):
-                shapes.append(Shape2(160, (2 * i) * 4, 10, 4, 65))
+                shapes.append(Shape2(160, i * 64 - 250, 10, 4, 65))
+            shapes.append(Boss1(160, -500, 75, 2, 450))
+        if player.wave == 9:
+            player.money += 170
+            bullets.clear()
+            for i in range(14, 0, -1):
+                shapes.append(Shape1(160, i * 8 - 300, 2, 6, 30))
+        if player.wave == 10:
+            player.money += 180
+            bullets.clear()
+            for i in range(9, 0, -1):
+                shapes.append(Shape2(160, i * 32- 250, 10, 4, 65))
+        if player.wave == 11:
+            player.money += 200
+            bullets.clear()
+            for i in range(10, 0, -1):
+                shapes.append(Shape2(160, i * 32- 150, 10, 4, 65))
+            shapes.append(Boss1(160, i * 0 - 250, 75, 2, 450))
+        if player.wave == 12:
+            player.money += 215
+            bullets.clear()
+            for i in range(35, 0, -1):
+                shapes.append(Shape1(160, i * 4 - 250, 2, 6, 30))
+        if player.wave == 13:
+            player.money += 230
+            bullets.clear()
+            for i in range(4, 0, -1):
+                shapes.append(Shape2(160, i * 4 - 250, 10, 4, 65))
             for i in range(3, 0, -1):
-                shapes.append(Boss1(160, (1 * i) * 32, 75, 2, 450))
+                shapes.append(Boss1(160, i * 32 - 250, 75, 2, 450))
+        if player.wave == 14:
+            player.money += 250
+            bullets.clear()
+            for i in range(10, 0, -1):
+                shapes.append(Shape2(160, i * 4 - 300, 10, 4, 65))
+            for i in range(7, 0, -1):
+                shapes.append(Boss1(160, i * 32 - 450, 75, 2, 450))
+        if player.wave == 15:
+            player.money += 260
+            bullets.clear()
+            for i in range(15, 0, -1):
+                shapes.append(Boss1(160, i * 16 - 500, 75, 2, 450))
 
     def creating_bullets(x, y, color, size, dmg, speed):
         bullets.append(Bullet(x, y, color, size, dmg, speed))
@@ -636,6 +1022,8 @@ size)
     f2 = pygame.font.SysFont('comic sans', 66)
 
     def gameplay():
+        if player.health <= 0:
+            pygame.quit()
         creating_tower()
         for tower in towers:
             tower.Draw()
@@ -666,7 +1054,7 @@ size)
 
             money_text = f2.render(("Монеты:"), False, yellow)
             health_text = f2.render(("Жизни:"), False, red)
-            wave_text = f2.render(("Волна:     /12"), False, "#ff8c01")
+            wave_text = f2.render(("Волна:     /15"), False, "#ff8c01")
             first_level_screen.blit(money, (1300, 20))
             first_level_screen.blit(health, (700, 20))
             first_level_screen.blit(money_text, (1020, 20))
@@ -706,5 +1094,5 @@ size)
                             print(i)  # печатает номер выбранной клеточки
                             secret_important_number = i  # запоминает выбранную клеточку
         pygame.display.update()
-        clock.tick(60)
+        clock.tick(FPS)
 pygame.quit()
